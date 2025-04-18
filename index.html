@@ -1,0 +1,2256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maldives PSM Stations Map</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.1/css/all.min.css">
+    <style>
+        #map {
+            height: 70vh;
+            width: 100%;
+            z-index: 1;
+        }
+        .info-panel {
+            /* Removed min-height to make it expand naturally */
+            height: auto;
+        }
+        .legend {
+            padding: 6px 8px;
+            background: white;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            line-height: 1.5;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        .cluster-icon {
+            background-color: rgba(0, 120, 255, 0.6);
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .marker-pin {
+            background-color: #3388ff;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+        body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 500px;
+        }
+        .no-print {
+            display: none;
+        }
+        .data-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .data-table th, .data-table td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        .data-table th {
+            background-color: #f2f2f2;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .data-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-button {
+            padding: 8px 16px;
+            background-color: #f1f1f1;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+            border-radius: 4px 4px 0 0;
+            margin-right: 2px;
+        }
+        .tab-button:hover {
+            background-color: #ddd;
+        }
+        .tab-button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .admin-panel {
+            display: none;
+        }
+        .admin-panel.visible {
+            display: block;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .editable:hover {
+            background-color: #f0f8ff;
+            cursor: pointer;
+        }
+        .flash-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 4px;
+            color: white;
+            background-color: #10B981;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: opacity 0.5s;
+            opacity: 0;
+        }
+        .flash-message.show {
+            opacity: 1;
+        }
+        .table-search-container {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .table-search {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            margin-right: 10px;
+        }
+        .location-btn {
+            position: absolute;
+            top: 80px;
+            right: 10px;
+            z-index: 500;
+            background-color: white;
+            border: 2px solid rgba(0,0,0,0.2);
+            border-radius: 4px;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+        }
+        .location-btn:hover {
+            background-color: #f4f4f4;
+        }
+        .loading-spinner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <header class="mb-6">
+            <h1 class="text-3xl font-bold text-center text-blue-700">Maldives PSM Stations Map</h1>
+            <p class="text-center text-gray-600 mt-2">Interactive map of Permanent Survey Markers (PSM) in the Maldives</p>
+            <div class="flex justify-end mt-2">
+                <button id="admin-login-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-1 px-3 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50">
+                    <i class="fas fa-lock mr-1"></i> Admin Login
+                </button>
+            </div>
+        </header>
+
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-1">
+                    <label for="atoll-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Atoll</label>
+                    <select id="atoll-filter" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                        <option value="">All Atolls</option>
+                    </select>
+                </div>
+                <div class="md:col-span-1">
+                    <label for="island-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Island</label>
+                    <select id="island-filter" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                        <option value="">All Islands</option>
+                    </select>
+                </div>
+                <div class="md:col-span-1">
+                    <label for="psm-search" class="block text-sm font-medium text-gray-700 mb-1">Search by PSM Number</label>
+                    <input type="text" id="psm-search" placeholder="e.g. PSM 5735" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                </div>
+                <div class="md:col-span-1 flex items-end">
+                    <button id="search-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        <i class="fas fa-search mr-2"></i> Search
+                    </button>
+                </div>
+            </div>
+            <div class="mt-4 flex flex-wrap">
+                <button id="export-csv" class="mr-2 mb-2 bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                    <i class="fas fa-file-csv mr-1"></i> Export CSV
+                </button>
+                <button id="export-json" class="mr-2 mb-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-1 px-3 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50">
+                    <i class="fas fa-file-code mr-1"></i> Export JSON
+                </button>
+                <button id="copy-link" class="mr-2 mb-2 bg-purple-600 hover:bg-purple-700 text-white font-medium py-1 px-3 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50">
+                    <i class="fas fa-link mr-1"></i> Copy Link
+                </button>
+                <button id="load-json-btn" class="mb-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-1 px-3 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                    <i class="fas fa-file-upload mr-1"></i> Load Custom JSON
+                </button>
+            </div>
+        </div>
+
+        <!-- Admin Panel (Hidden by default) -->
+        <div id="admin-panel" class="admin-panel bg-white rounded-lg shadow-md p-4 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Admin Controls</h2>
+                <div>
+                    <span id="admin-status" class="text-green-600 mr-2"><i class="fas fa-user-check"></i> Logged In</span>
+                    <button id="admin-logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-1 px-3 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Data Management</h3>
+                    <div class="space-y-2">
+                        <button id="add-psm-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                            <i class="fas fa-plus mr-2"></i> Add New PSM Station
+                        </button>
+                        <button id="save-changes-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                            <i class="fas fa-save mr-2"></i> Save All Changes
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Data Import/Export</h3>
+                    <div class="space-y-2">
+                        <button id="import-data-btn" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50">
+                            <i class="fas fa-file-import mr-2"></i> Import Data
+                        </button>
+                        <button id="export-full-data-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
+                            <i class="fas fa-file-export mr-2"></i> Export Full Dataset
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-4 bg-yellow-50 rounded-md">
+                <p class="text-yellow-800"><i class="fas fa-info-circle mr-1"></i> To edit a PSM station, go to the Data Table tab and click on any cell. Changes will be applied after clicking "Save All Changes".</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md overflow-hidden relative">
+                    <div id="map"></div>
+                    <button id="location-btn" class="location-btn" title="Show my location">
+                        <i class="fas fa-location-arrow"></i>
+                    </button>
+                </div>
+                <div class="mt-2 text-sm text-gray-600 flex justify-between">
+                    <div class="text-gray-500">
+                        <span id="coordinates-display"></span>
+                    </div>
+                    <button id="reset-view" class="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-md hover:bg-blue-50">
+                        <i class="fas fa-sync-alt mr-1"></i> Reset Map View
+                    </button>
+                </div>
+            </div>
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h2 class="text-xl font-semibold mb-3 text-gray-800">PSM Station Details</h2>
+                    <div id="info-panel" class="info-panel">
+                        <p class="text-gray-600">Select a marker on the map to view station details.</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-4 mt-6">
+                    <h2 class="text-xl font-semibold mb-3 text-gray-800">Statistics</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-blue-50 p-3 rounded-md">
+                            <p class="text-sm text-gray-500">Total PSM Stations</p>
+                            <p id="total-stations" class="text-xl font-bold text-blue-700">0</p>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-md">
+                            <p class="text-sm text-gray-500">Islands Covered</p>
+                            <p id="total-islands" class="text-xl font-bold text-green-700">0</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-4">
+                        <div class="p-3 bg-purple-50 rounded-md">
+                            <p class="text-sm text-gray-500">Atolls Covered</p>
+                            <p id="total-atolls" class="text-xl font-bold text-purple-700">0</p>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-md">
+                            <p class="text-sm text-gray-500">Visible Stations</p>
+                            <p id="visible-stations" class="text-xl font-bold text-gray-700">0</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex border-b border-gray-200">
+                            <button class="tab-button active" data-tab="tab-coordinate-system">Coordinate Systems</button>
+                            <button class="tab-button" data-tab="tab-map-controls">Map Controls</button>
+                        </div>
+                        <div id="tab-coordinate-system" class="tab-content active p-3 text-sm">
+                            <p>The PSM stations use multiple coordinate systems:</p>
+                            <ul class="list-disc ml-5 mt-2 space-y-1">
+                                <li><b>Geographic</b>: Lat/Long in WGS84</li>
+                                <li><b>Projected</b>: UTM Easting/Northing coordinates</li>
+                                <li><b>Vertical</b>: Orthometric heights (above MSL)</li>
+                            </ul>
+                        </div>
+                        <div id="tab-map-controls" class="tab-content p-3 text-sm">
+                            <ul class="space-y-1">
+                                <li><i class="fas fa-search-plus text-blue-600"></i> Zoom: Scroll wheel or +/- buttons</li>
+                                <li><i class="fas fa-arrows-alt text-blue-600"></i> Pan: Click and drag map</li>
+                                <li><i class="fas fa-mouse-pointer text-blue-600"></i> Select: Click on markers</li>
+                                <li><i class="fas fa-object-group text-blue-600"></i> Clusters: Click to expand</li>
+                                <li><i class="fas fa-location-arrow text-blue-600"></i> Location: Click location button</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+            <div class="flex border-b border-gray-200 mb-4">
+                <button class="tab-button active" data-tab="tab-about">About PSM Stations</button>
+                <button class="tab-button" data-tab="tab-usage">How to Use</button>
+                <button class="tab-button" data-tab="tab-data">Data Table</button>
+            </div>
+            
+            <div id="tab-about" class="tab-content active">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">About PSM Stations</h2>
+                <div class="space-y-4">
+                    <p>Permanent Survey Markers (PSM) are fixed reference points used for surveying and mapping purposes in the Maldives. These markers are established by the Maldives Land and Survey Authority (MLSA), now part of the Ministry of Planning.</p>
+                    <p>Each island typically has 3 PSM stations that serve as geodetic control points for accurate positioning, construction, and development projects. Their coordinates are precisely measured and documented.</p>
+                    <p>This map provides an interactive way to locate and access PSM station data that was previously only available in PDF format, making it difficult to search or visualize spatially.</p>
+                </div>
+                
+                <h3 class="text-xl font-semibold mt-6 mb-3 text-gray-800">Understanding Coordinates</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    <div class="bg-blue-50 p-4 rounded-md">
+                        <h4 class="font-medium text-blue-800 mb-2">Geographic Coordinates</h4>
+                        <p>Latitude and Longitude values in degrees-minutes-seconds (DMS) format representing global position.</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-md">
+                        <h4 class="font-medium text-green-800 mb-2">Projected Coordinates</h4>
+                        <p>Easting and Northing values in meters, representing position on a flat projection system.</p>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded-md">
+                        <h4 class="font-medium text-yellow-800 mb-2">Orthometric Height</h4>
+                        <p>Height above mean sea level in meters, used for elevation measurements.</p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-md">
+                        <h4 class="font-medium text-indigo-800 mb-2">Ellipsoid Height</h4>
+                        <p>Height above reference ellipsoid in meters, used in geodetic calculations.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="tab-usage" class="tab-content">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">How to Use This Map</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-medium mb-2 text-blue-700">Basic Navigation</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li>Click on any marker to view detailed information about the PSM station</li>
+                            <li>Zoom in/out using the controls in the top-right corner or your mouse wheel</li>
+                            <li>Click and drag to pan across the map</li>
+                            <li>Markers in close proximity are clustered together - click on clusters to zoom in</li>
+                            <li>Click the location button to show your current position on the map</li>
+                        </ul>
+                        
+                        <h3 class="text-lg font-medium mt-4 mb-2 text-blue-700">Search & Filtering</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li>Use the atoll filter dropdown to narrow down by atoll</li>
+                            <li>Use the island filter dropdown to view PSM stations on a specific island</li>
+                            <li>Search for a specific PSM station by entering its number (e.g., "PSM 5735")</li>
+                            <li>Click the Search button to apply filters</li>
+                            <li>Click "Reset Map View" to clear all filters and show all stations</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium mb-2 text-blue-700">Data Export</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li>Click "Export CSV" to download the PSM station data as a CSV file</li>
+                            <li>Click "Export JSON" to download the data in JSON format</li>
+                            <li>Click "Copy Link" to copy the current map view URL to share with others</li>
+                            <li>Click "Load Custom JSON" to load your own PSM data from a JSON file</li>
+                        </ul>
+                        
+                        <h3 class="text-lg font-medium mt-4 mb-2 text-blue-700">Understanding the Display</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li>The info panel shows detailed information about selected stations</li>
+                            <li>The map legend explains the symbols used on the map</li>
+                            <li>Statistics show the total number of stations and islands in the dataset</li>
+                            <li>The "Visible Stations" count shows how many stations match your current filters</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="tab-data" class="tab-content">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">PSM Station Data Table</h2>
+                <div class="table-search-container">
+                    <input type="text" id="table-search" class="table-search" placeholder="Search the table...">
+                    <button id="add-row-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1 px-3 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        <i class="fas fa-plus"></i> Add Row
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="data-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>PSM Number</th>
+                                <th>Island</th>
+                                <th>Atoll</th>
+                                <th>Latitude</th>
+                                <th>Longitude</th>
+                                <th>Easting</th>
+                                <th>Northing</th>
+                                <th>Ortho Height</th>
+                                <th>Date</th>
+                                <th>File URL</th>
+                                <th class="actions-column">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>PSM Station Data sourced from the Ministry of Planning, Maldives (formerly MLSA)</p>
+            <p class="mt-1">© 2024 - Created as an open-source project</p>
+        </footer>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Administrator Login</h2>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="username" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Login
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add PSM Modal -->
+    <div id="add-psm-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Add New PSM Station</h2>
+            <form id="add-psm-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="new-psm-number" class="block text-sm font-medium text-gray-700 mb-1">PSM Number</label>
+                        <input type="text" id="new-psm-number" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2" required>
+                    </div>
+                    <div>
+                        <label for="new-atoll" class="block text-sm font-medium text-gray-700 mb-1">Atoll</label>
+                        <select id="new-atoll" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2" required>
+                            <option value="">Select Atoll</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="new-island" class="block text-sm font-medium text-gray-700 mb-1">Island</label>
+                        <input type="text" id="new-island" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2" required>
+                    </div>
+                    <div>
+                        <label for="new-lat" class="block text-sm font-medium text-gray-700 mb-1">Latitude (DMS)</label>
+                        <input type="text" id="new-lat" placeholder="e.g. 4°01'23.99558&quot;N" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                    </div>
+                    <div>
+                        <label for="new-long" class="block text-sm font-medium text-gray-700 mb-1">Longitude (DMS)</label>
+                        <input type="text" id="new-long" placeholder="e.g. 72°48'37.37255&quot;E" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                    </div>
+                    <div>
+                        <label for="new-easting" class="block text-sm font-medium text-gray-700 mb-1">Easting</label>
+                        <input type="text" id="new-easting" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                    </div>
+                    <div>
+                        <label for="new-northing" class="block text-sm font-medium text-gray-700 mb-1">Northing</label>
+                        <input type="text" id="new-northing" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                    </div>
+                    <div>
+                        <label for="new-ortho-height" class="block text-sm font-medium text-gray-700 mb-1">Ortho Height</label>
+                        <input type="text" id="new-ortho-height" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                    </div>
+                    <div>
+                        <label for="new-ellipsoid-height" class="block text-sm font-medium text-gray-700 mb-1">Ellipsoid Height</label>
+                        <input type="text" id="new-ellipsoid-height" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                    </div>
+                    <div>
+                        <label for="new-date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <input type="text" id="new-date" placeholder="DD/MM/YYYY" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                    </div>
+                    <div>
+                        <label for="new-file-url" class="block text-sm font-medium text-gray-700 mb-1">File URL</label>
+                        <input type="text" id="new-file-url" placeholder="https://example.com/pdf/file.pdf" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2">
+                    </div>
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        <i class="fas fa-plus mr-2"></i> Add PSM Station
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Flash Message Container -->
+    <div id="flash-message" class="flash-message"></div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <div class="mt-4 text-lg font-medium text-blue-700">Loading PSM data...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script>
+        // Global variables
+        let psmData = [];
+        let markers = [];
+        let islands = new Set();
+        let atolls = new Set();
+        let islandsByAtoll = {};
+        let psmById = {};
+        let markerCluster;
+        let map;
+        
+        // Show loading spinner
+        function showLoading() {
+            document.getElementById('loading-spinner').style.display = 'flex';
+        }
+        
+        // Hide loading spinner
+        function hideLoading() {
+            document.getElementById('loading-spinner').style.display = 'none';
+        }
+
+        // Flash message function for improved UI feedback
+        function showFlashMessage(message, type = 'success') {
+            const flashMessage = document.getElementById('flash-message');
+            flashMessage.textContent = message;
+            
+            // Set color based on message type
+            if (type === 'success') {
+                flashMessage.style.backgroundColor = '#10B981'; // Green
+            } else if (type === 'error') {
+                flashMessage.style.backgroundColor = '#EF4444'; // Red
+            } else if (type === 'info') {
+                flashMessage.style.backgroundColor = '#3B82F6'; // Blue
+            } else if (type === 'warning') {
+                flashMessage.style.backgroundColor = '#F59E0B'; // Yellow
+            }
+            
+            // Show the message
+            flashMessage.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                flashMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        // List of all Maldives atolls
+        const maldivesAtolls = [
+            "AA", // Alifu Alifu (North Ari)
+            "ADh", // Alifu Dhaalu (South Ari)
+            "B", // Baa
+            "Dh", // Dhaalu
+            "F", // Faafu
+            "GA", // Gaafu Alifu (North Huvadhoo)
+            "GDh", // Gaafu Dhaalu (South Huvadhoo)
+            "Gn", // Gnaviyani
+            "HA", // Haa Alifu (North Thiladhunmathi)
+            "HDh", // Haa Dhaalu (South Thiladhunmathi)
+            "K", // Kaafu (Male)
+            "L", // Laamu
+            "Lh", // Lhaviyani
+            "M", // Meemu
+            "N", // Noonu
+            "R", // Raa
+            "S", // Seenu (Addu)
+            "Sh", // Shaviyani
+            "Th", // Thaa
+            "V" // Vaavu
+        ];
+
+        // Initialize the map
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: false,  // We'll add this manually in a better position
+                minZoom: 7,
+                maxZoom: 19,
+                attributionControl: true
+            }).setView([4.1755, 73.5093], 9); // Centered on Maldives
+
+            // Add custom zoom control to top-right
+            L.control.zoom({
+                position: 'topright'
+            }).addTo(map);
+
+            // Add a scale control for distance reference
+            L.control.scale({
+                imperial: false,
+                position: 'bottomright'
+            }).addTo(map);
+
+            // Add the tile layer with proper attribution
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | PSM Data: Ministry of Planning, Maldives',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Initialize marker cluster group with custom settings
+            markerCluster = L.markerClusterGroup({
+                showCoverageOnHover: false,
+                zoomToBoundsOnClick: true,
+                maxClusterRadius: 50,
+                spiderfyOnMaxZoom: true,
+                iconCreateFunction: function(cluster) {
+                    const count = cluster.getChildCount();
+                    let size = 'small';
+                    
+                    if (count > 10) {
+                        size = 'large';
+                    } else if (count > 5) {
+                        size = 'medium';
+                    }
+                    
+                    return L.divIcon({
+                        html: `<div class="cluster-icon" style="width: ${30 + count}px; height: ${30 + count}px;">${count}</div>`,
+                        className: `marker-cluster marker-cluster-${size}`,
+                        iconSize: L.point(40, 40)
+                    });
+                }
+            });
+
+            // Add marker cluster group to map
+            map.addLayer(markerCluster);
+            
+            // Add the legend
+            const legend = L.control({position: 'bottomleft'});
+            
+            legend.onAdd = function(map) {
+                const div = L.DomUtil.create('div', 'legend');
+                div.innerHTML = `
+                    <h4 class="font-bold mb-2">Legend</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center">
+                            <i style="background: hsl(200, 70%, 50%); border-radius: 50%; width: 12px; height: 12px;"></i>
+                            <span class="ml-2">AA Atoll</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i style="background: hsl(120, 70%, 50%); border-radius: 50%; width: 12px; height: 12px;"></i>
+                            <span class="ml-2">ADh Atoll</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i style="background: #ff8833; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">3</i>
+                            <span class="ml-2">Clustered Stations</span>
+                        </div>
+                    </div>
+                `;
+                return div;
+            };
+            
+            legend.addTo(map);
+            
+            // Mouse coordinate display
+            map.on('mousemove', function(e) {
+                document.getElementById('coordinates-display').textContent = 
+                    `Lat: ${e.latlng.lat.toFixed(6)}° | Lng: ${e.latlng.lng.toFixed(6)}°`;
+            });
+        }
+
+        // Function to fetch PSM data from GitHub repository
+        async function fetchGitHubData() {
+            showLoading();
+            try {
+                // Use JSDeliver as CDN for GitHub raw content (as recommended)
+                const gitHubRepoUrl = 'https://cdn.jsdelivr.net/gh/zahyzahyzahy/PSM-MV@9c4a4378f17c140fc2e96dcc72a5862965a9b251/psm_data.json';
+                
+                const response = await fetch(gitHubRepoUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data from GitHub: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                hideLoading();
+                
+                if (Array.isArray(data) && data.length > 0) {
+                    showFlashMessage(`Successfully loaded ${data.length} PSM stations from GitHub repository`, "success");
+                    return processData(data);
+                } else {
+                    throw new Error('Invalid data format from GitHub repository');
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Error fetching GitHub data:', error);
+                showFlashMessage(`Error loading data from GitHub: ${error.message}. Using local storage if available.`, "error");
+                
+                // Return null to indicate failure, so we can fall back to local storage
+                return null;
+            }
+        }
+
+        // Function to parse PSM data with atoll extraction
+        function processData(data) {
+            // Clear existing data structures 
+            islandsByAtoll = {};
+            
+            // Extract atolls from island names if not already present
+            data.forEach(station => {
+                // Standardize island name format
+                station.Island = station.Island ? station.Island.trim() : '';
+                
+                // If Atoll is not already defined, extract it from the island name
+                if (!station.Atoll) {
+                    const atollMatch = station.Island.match(/^([A-Za-z]+)\./);
+                    if (atollMatch) {
+                        station.Atoll = atollMatch[1].toUpperCase();
+                    } else if (station.Island.startsWith('Adh.')) {
+                        station.Atoll = 'ADh';
+                    } else {
+                        // For islands without clear atoll prefix, check for common patterns
+                        if (station.Island.includes('AA ')) {
+                            station.Atoll = 'AA';
+                        } else {
+                            station.Atoll = 'UNKNOWN';
+                        }
+                    }
+                }
+                
+                // Ensure File URL exists
+                if (!station["File URL"]) {
+                    station["File URL"] = "";
+                }
+
+                // Group islands by atoll for the filter dropdown
+                if (!islandsByAtoll[station.Atoll]) {
+                    islandsByAtoll[station.Atoll] = new Set();
+                }
+                islandsByAtoll[station.Atoll].add(station.Island);
+            });
+            
+            return data;
+        }
+
+        // Enhanced function to convert DMS to decimal degrees with robust handling of different formats
+        function dmsToDecimal(dmsStr) {
+            if (!dmsStr || dmsStr === '-') return null;
+            
+            // Remove any excessive spaces and standardize format
+            dmsStr = dmsStr.trim().replace(/\s+/g, ' ');
+            
+            // Handle different DMS formats found in the dataset
+            
+            // Format 1: "4°01'23.99558"N" or "72°48'37.37255"E"
+            let match = dmsStr.match(/(\d+)°(\d+)'([\d.]+)"([NSEW])/);
+            if (match) {
+                let [_, degrees, minutes, seconds, direction] = match;
+                let decimal = parseFloat(degrees) + parseFloat(minutes)/60 + parseFloat(seconds)/3600;
+                if (direction === 'S' || direction === 'W') decimal = -decimal;
+                return decimal;
+            }
+            
+            // Format 2: "4° 0'7.33"N" or similar with space after degree symbol
+            match = dmsStr.match(/(\d+)°\s*(\d+)'([\d.]+)"([NSEW])/);
+            if (match) {
+                let [_, degrees, minutes, seconds, direction] = match;
+                let decimal = parseFloat(degrees) + parseFloat(minutes)/60 + parseFloat(seconds)/3600;
+                if (direction === 'S' || direction === 'W') decimal = -decimal;
+                return decimal;
+            }
+            
+            // Format 3: "3° 40' 11.756040" N" with space before direction
+            match = dmsStr.match(/(\d+)°\s*(\d+)'\s*([\d.]+)"\s*([NSEW])/);
+            if (match) {
+                let [_, degrees, minutes, seconds, direction] = match;
+                let decimal = parseFloat(degrees) + parseFloat(minutes)/60 + parseFloat(seconds)/3600;
+                if (direction === 'S' || direction === 'W') decimal = -decimal;
+                return decimal;
+            }
+            
+            // Format 4: "4:26:17.74208N" or similar with colon separators and no spaces
+            match = dmsStr.match(/(\d+):(\d+):([\d.]+)([NSEW])/);
+            if (match) {
+                let [_, degrees, minutes, seconds, direction] = match;
+                let decimal = parseFloat(degrees) + parseFloat(minutes)/60 + parseFloat(seconds)/3600;
+                if (direction === 'S' || direction === 'W') decimal = -decimal;
+                return decimal;
+            }
+            
+            // Format 5: "3° 59' 09.86N" (direction attached to seconds)
+            match = dmsStr.match(/(\d+)°\s*(\d+)'\s*([\d.]+)([NSEW])/);
+            if (match) {
+                let [_, degrees, minutes, seconds, direction] = match;
+                let decimal = parseFloat(degrees) + parseFloat(minutes)/60 + parseFloat(seconds)/3600;
+                if (direction === 'S' || direction === 'W') decimal = -decimal;
+                return decimal;
+            }
+            
+            console.warn("Could not parse DMS format:", dmsStr);
+            return null;
+        }
+
+        // Function to create a custom marker icon with color coding based on atoll
+        function createCustomMarker(station) {
+            // Color code by atoll
+            const atoll = station.Atoll || 'UNKNOWN';
+            
+            // Generate a consistent color for each atoll
+            let hue;
+            switch(atoll) {
+                case 'AA': hue = 200; break;  // blue
+                case 'ADh': hue = 120; break; // green
+                case 'UNKNOWN': hue = 0; break; // red
+                default: 
+                    // Hash the atoll name to get a consistent hue
+                    hue = 0;
+                    for (let i = 0; i < atoll.length; i++) {
+                        hue += atoll.charCodeAt(i);
+                    }
+                    hue = hue % 360;
+            }
+            
+            // Extract the numeric part for the label
+            const numberMatch = station['PSM Station Number'].match(/\d+/);
+            const number = numberMatch ? numberMatch[0] : '';
+            
+            return L.divIcon({
+                html: `<div class="marker-pin" style="background-color: hsl(${hue}, 70%, 50%);">${number}</div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15],
+                popupAnchor: [0, -15],
+                className: 'custom-marker-icon'
+            });
+        }
+
+        // Create markers for PSM stations
+        function createMarkers() {
+            // Clear existing markers
+            if (markerCluster) {
+                markerCluster.clearLayers();
+            }
+            markers = [];
+            islands = new Set();
+            atolls = new Set();
+            psmById = {};
+            
+            if (!psmData || psmData.length === 0) {
+                showFlashMessage("No PSM data available to display", "warning");
+                return;
+            }
+            
+            psmData.forEach(station => {
+                // Add to sets for filters
+                islands.add(station.Island);
+                atolls.add(station.Atoll);
+                
+                // Store reference to station by ID for quick lookup
+                psmById[station['PSM Station Number']] = station;
+                
+                // Convert coordinates to decimal degrees
+                let lat = null;
+                let lng = null;
+                
+                if (station.Lat && station.Lat !== '-') {
+                    lat = dmsToDecimal(station.Lat);
+                }
+                
+                if (station.Long && station.Long !== '-') {
+                    lng = dmsToDecimal(station.Long);
+                }
+                
+                // Create marker if we have valid coordinates
+                if (lat && lng) {
+                    const customIcon = createCustomMarker(station);
+                    
+                    const marker = L.marker([lat, lng], {
+                        icon: customIcon,
+                        title: station['PSM Station Number']
+                    }).bindPopup(`<b>${station['PSM Station Number']}</b><br>Island: ${station.Island}`);
+                    
+                    marker.psmData = station;
+                    markers.push(marker);
+                    
+                    // Add click event to display info
+                    marker.on('click', function() {
+                        displayStationInfo(station);
+                    });
+                    
+                    // Add the marker to the cluster group
+                    markerCluster.addLayer(marker);
+                } else {
+                    // Store the station without coordinates for data completeness
+                    console.info(`Station ${station['PSM Station Number']} missing coordinates`);
+                }
+            });
+            
+            // Update statistics
+            document.getElementById('total-stations').textContent = psmData.length;
+            document.getElementById('total-islands').textContent = islands.size;
+            document.getElementById('total-atolls').textContent = atolls.size;
+            document.getElementById('visible-stations').textContent = markers.length;
+            
+            // Group islands by atoll for filtering
+            for (const atoll of atolls) {
+                if (!islandsByAtoll[atoll]) {
+                    islandsByAtoll[atoll] = new Set();
+                }
+            }
+            
+            psmData.forEach(station => {
+                if (islandsByAtoll[station.Atoll]) {
+                    islandsByAtoll[station.Atoll].add(station.Island);
+                }
+            });
+            
+            // Initialize atoll dropdowns
+            initializeAtollDropdowns();
+            
+            // Initially populate islands dropdown with all islands
+            populateIslandDropdown();
+        }
+        
+        // Initialize atoll filter with all Maldives atolls
+        function initializeAtollDropdowns() {
+            const atollFilter = document.getElementById('atoll-filter');
+            const newAtollDropdown = document.getElementById('new-atoll');
+            
+            // Clear existing options
+            atollFilter.innerHTML = '<option value="">All Atolls</option>';
+            newAtollDropdown.innerHTML = '<option value="">Select Atoll</option>';
+            
+            // Add all Maldives atolls
+            maldivesAtolls.sort().forEach(atoll => {
+                // Add to atoll filter dropdown
+                const filterOption = document.createElement('option');
+                filterOption.value = atoll;
+                filterOption.textContent = atoll;
+                // Disable options that don't have data
+                if (!islandsByAtoll[atoll] || islandsByAtoll[atoll].size === 0) {
+                    filterOption.disabled = true;
+                    filterOption.textContent += ' (No data)';
+                }
+                atollFilter.appendChild(filterOption);
+                
+                // Add to new PSM form dropdown
+                const formOption = document.createElement('option');
+                formOption.value = atoll;
+                formOption.textContent = atoll;
+                newAtollDropdown.appendChild(formOption);
+            });
+        }
+        
+        // Function to populate island dropdown - filtered by selected atoll
+        function populateIslandDropdown(selectedAtoll = '') {
+            const islandFilter = document.getElementById('island-filter');
+            islandFilter.innerHTML = '<option value="">All Islands</option>';
+            
+            let islandsToShow;
+            
+            if (selectedAtoll && islandsByAtoll[selectedAtoll]) {
+                // Show only islands from the selected atoll
+                islandsToShow = Array.from(islandsByAtoll[selectedAtoll]).sort();
+            } else {
+                // Show all islands if no atoll is selected
+                islandsToShow = Array.from(islands).sort();
+            }
+            
+            islandsToShow.forEach(island => {
+                const option = document.createElement('option');
+                option.value = island;
+                option.textContent = island;
+                islandFilter.appendChild(option);
+            });
+        }
+        
+        // Display station information in the info panel with improved formatting
+        function displayStationInfo(station) {
+            const infoPanel = document.getElementById('info-panel');
+            
+            let latStr = station.Lat !== '-' ? station.Lat : 'Not available';
+            let longStr = station.Long !== '-' ? station.Long : 'Not available';
+            
+            let html = `
+                <div class="space-y-3">
+                    <div class="bg-blue-50 rounded p-2">
+                        <h3 class="font-bold text-blue-800">${station['PSM Station Number']}</h3>
+                        <p class="text-blue-700">${station.Island} <span class="text-gray-500">(${station.Atoll})</span></p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div class="bg-gray-50 p-2 rounded">
+                            <p class="text-gray-500">Latitude</p>
+                            <p class="font-medium">${latStr}</p>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded">
+                            <p class="text-gray-500">Longitude</p>
+                            <p class="font-medium">${longStr}</p>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded">
+                            <p class="text-gray-500">Easting</p>
+                            <p class="font-medium">${station.Easting || 'N/A'}</p>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded">
+                            <p class="text-gray-500">Northing</p>
+                            <p class="font-medium">${station.Northing || 'N/A'}</p>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded">
+                            <p class="text-gray-500">Ortho Height</p>
+                            <p class="font-medium">${station['Ortho Height'] || 'N/A'} m</p>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded">
+                            <p class="text-gray-500">Ellipsoid Height</p>
+                            <p class="font-medium">${station['Ellipsoid Height'] !== '-' ? station['Ellipsoid Height'] + ' m' : 'N/A'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-2 rounded text-sm">
+                        <p class="text-gray-500">Survey Date</p>
+                        <p class="font-medium">${station.Date || 'N/A'}</p>
+                    </div>
+                    
+                    ${station['File URL'] ? `
+                        <div class="bg-indigo-50 p-2 rounded text-sm">
+                            <p class="text-gray-500">Data PDF</p>
+                            <a href="${station['File URL']}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                                <i class="fas fa-file-pdf mr-1"></i> Download PDF
+                            </a>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="mt-2 flex justify-between">
+                        <button class="find-related bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs py-1 px-2 rounded" 
+                                data-island="${station.Island}">
+                            <i class="fas fa-map-marker-alt mr-1"></i> Find all on ${station.Island}
+                        </button>
+                        <button class="find-atoll bg-green-100 hover:bg-green-200 text-green-800 text-xs py-1 px-2 rounded" 
+                                data-atoll="${station.Atoll}">
+                            <i class="fas fa-map mr-1"></i> Find all in ${station.Atoll}
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            infoPanel.innerHTML = html;
+            
+            // Add event listener to the "Find related" button
+            document.querySelector('.find-related').addEventListener('click', function() {
+                const island = this.getAttribute('data-island');
+                document.getElementById('island-filter').value = island;
+                document.getElementById('atoll-filter').value = '';
+                performSearch();
+            });
+            
+            // Add event listener to the "Find atoll" button
+            document.querySelector('.find-atoll').addEventListener('click', function() {
+                const atoll = this.getAttribute('data-atoll');
+                document.getElementById('atoll-filter').value = atoll;
+                populateIslandDropdown(atoll);
+                document.getElementById('island-filter').value = '';
+                performSearch();
+            });
+            
+            // Find this station on map and open popup if it's not already open
+            markers.forEach(marker => {
+                if (marker.psmData['PSM Station Number'] === station['PSM Station Number']) {
+                    map.flyTo(marker.getLatLng(), 15);
+                    marker.openPopup();
+                }
+            });
+        }
+        
+        // Perform search with improved filtering including atoll
+        function performSearch() {
+            const selectedAtoll = document.getElementById('atoll-filter').value;
+            const selectedIsland = document.getElementById('island-filter').value;
+            const psmSearch = document.getElementById('psm-search').value.trim().toUpperCase();
+            
+            // Clear previous markers
+            markerCluster.clearLayers();
+            
+            // Add filtered markers
+            let visibleMarkers = [];
+            
+            markers.forEach(marker => {
+                const station = marker.psmData;
+                
+                const atollMatch = !selectedAtoll || station.Atoll === selectedAtoll;
+                const islandMatch = !selectedIsland || station.Island === selectedIsland;
+                const psmMatch = !psmSearch || station['PSM Station Number'].toUpperCase().includes(psmSearch);
+                
+                if (atollMatch && islandMatch && psmMatch) {
+                    markerCluster.addLayer(marker);
+                    visibleMarkers.push(marker);
+                }
+            });
+            
+            // Update visible stations count
+            document.getElementById('visible-stations').textContent = visibleMarkers.length;
+            
+            // If we have visible markers, fit the map to them
+            if (visibleMarkers.length > 0) {
+                const group = L.featureGroup(visibleMarkers);
+                map.fitBounds(group.getBounds(), { padding: [50, 50] });
+                
+                // If only one marker is visible, show its info and open its popup
+                if (visibleMarkers.length === 1) {
+                    displayStationInfo(visibleMarkers[0].psmData);
+                    visibleMarkers[0].openPopup();
+                }
+                
+                showFlashMessage(`Found ${visibleMarkers.length} PSM stations matching your criteria`, "success");
+            } else {
+                document.getElementById('info-panel').innerHTML = `
+                    <div class="bg-yellow-50 p-3 rounded">
+                        <p class="text-yellow-700">No PSM stations found matching your search criteria.</p>
+                    </div>
+                `;
+                
+                showFlashMessage("No stations found matching your criteria", "warning");
+            }
+            
+            // Update the data table if it's currently visible
+            if (document.getElementById('tab-data').classList.contains('active')) {
+                populateDataTable(visibleMarkers.map(m => m.psmData));
+            }
+        }
+        
+        // Reset map view to show all markers
+        function resetMapView() {
+            // First remove and re-add all markers
+            markerCluster.clearLayers();
+            
+            // Add all markers back
+            markers.forEach(marker => {
+                markerCluster.addLayer(marker);
+            });
+            
+            // Update visible stations count
+            document.getElementById('visible-stations').textContent = markers.length;
+            
+            // Fit bounds to show all markers
+            if (markers.length > 0) {
+                const group = L.featureGroup(markers);
+                map.fitBounds(group.getBounds(), { padding: [50, 50] });
+            }
+            
+            // Reset filter dropdowns
+            document.getElementById('atoll-filter').value = '';
+            populateIslandDropdown(); // Reset island dropdown
+            document.getElementById('island-filter').value = '';
+            document.getElementById('psm-search').value = '';
+            
+            // Clear info panel
+            document.getElementById('info-panel').innerHTML = '<p class="text-gray-600">Select a marker on the map to view station details.</p>';
+            
+            showFlashMessage("Map view reset. Showing all markers.", "info");
+        }
+        
+        // Function to populate the data table with editable cells for admin
+        function populateDataTable(stations) {
+            const tableBody = document.querySelector('#data-table tbody');
+            tableBody.innerHTML = '';
+            
+            stations.forEach(station => {
+                const row = document.createElement('tr');
+                
+                // Check if user is admin to add editable class
+                const isAdmin = localStorage.getItem('psmAdminLoggedIn') === 'true';
+                const editableClass = isAdmin ? 'editable' : '';
+                
+                row.innerHTML = `
+                    <td class="${editableClass}" data-field="PSM Station Number" data-id="${station['PSM Station Number']}">${station['PSM Station Number']}</td>
+                    <td class="${editableClass}" data-field="Island" data-id="${station['PSM Station Number']}">${station.Island}</td>
+                    <td class="${editableClass}" data-field="Atoll" data-id="${station['PSM Station Number']}">${station.Atoll}</td>
+                    <td class="${editableClass}" data-field="Lat" data-id="${station['PSM Station Number']}">${station.Lat !== '-' ? station.Lat : 'N/A'}</td>
+                    <td class="${editableClass}" data-field="Long" data-id="${station['PSM Station Number']}">${station.Long !== '-' ? station.Long : 'N/A'}</td>
+                    <td class="${editableClass}" data-field="Easting" data-id="${station['PSM Station Number']}">${station.Easting || 'N/A'}</td>
+                    <td class="${editableClass}" data-field="Northing" data-id="${station['PSM Station Number']}">${station.Northing || 'N/A'}</td>
+                    <td class="${editableClass}" data-field="Ortho Height" data-id="${station['PSM Station Number']}">${station['Ortho Height'] || 'N/A'}</td>
+                    <td class="${editableClass}" data-field="Date" data-id="${station['PSM Station Number']}">${station.Date || 'N/A'}</td>
+                    <td class="${editableClass}" data-field="File URL" data-id="${station['PSM Station Number']}">
+                        ${station['File URL'] ? 
+                            `<a href="${station['File URL']}" target="_blank" class="text-blue-600 hover:underline">View PDF</a>` : 
+                            'N/A'}
+                    </td>
+                    <td class="actions-column">
+                        ${isAdmin ? `
+                            <button class="edit-row-btn text-blue-600 hover:text-blue-800 mr-2" data-id="${station['PSM Station Number']}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-row-btn text-red-600 hover:text-red-800" data-id="${station['PSM Station Number']}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        ` : ''}
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Add click handlers for editable cells if admin is logged in
+            if (localStorage.getItem('psmAdminLoggedIn') === 'true') {
+                // Edit cell on click
+                document.querySelectorAll('.editable').forEach(cell => {
+                    cell.addEventListener('click', function() {
+                        // Get current value
+                        const currentValue = this.innerText === 'N/A' ? '' : this.innerText;
+                        const field = this.getAttribute('data-field');
+                        const id = this.getAttribute('data-id');
+                        
+                        // Show input for editing
+                        this.innerHTML = `<input type="text" class="edit-input w-full border p-1" value="${currentValue}">`;
+                        const input = this.querySelector('input');
+                        input.focus();
+                        
+                        // Handle saving on blur
+                        input.addEventListener('blur', function() {
+                            const newValue = this.value;
+                            
+                            // Update the cell display
+                            if (field === 'File URL' && newValue) {
+                                cell.innerHTML = `<a href="${newValue}" target="_blank" class="text-blue-600 hover:underline">View PDF</a>`;
+                            } else {
+                                cell.textContent = newValue || 'N/A';
+                            }
+                            
+                            // Update the data in memory
+                            for (let i = 0; i < psmData.length; i++) {
+                                if (psmData[i]['PSM Station Number'] === id) {
+                                    psmData[i][field] = newValue;
+                                    
+                                    // If this is a coordinate change, update the marker
+                                    if (field === 'Lat' || field === 'Long') {
+                                        createMarkers();
+                                    }
+                                    
+                                    break;
+                                }
+                            }
+                        });
+                        
+                        // Handle saving on enter
+                        input.addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter') {
+                                this.blur();
+                            }
+                        });
+                    });
+                });
+                
+                // Delete row button
+                document.querySelectorAll('.delete-row-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        
+                        // Confirm deletion
+                        if (confirm(`Are you sure you want to delete PSM Station ${id}?`)) {
+                            // Find the index of this station in the data array
+                            const index = psmData.findIndex(station => station['PSM Station Number'] === id);
+                            
+                            if (index !== -1) {
+                                // Remove from data array
+                                psmData.splice(index, 1);
+                                
+                                // Update markers
+                                createMarkers();
+                                
+                                // Update table
+                                populateDataTable(psmData);
+                                
+                                showFlashMessage(`Deleted PSM Station ${id}`, "success");
+                                
+                                // Save the updated data
+                                savePSMData(psmData);
+                            }
+                        }
+                    });
+                });
+                
+                // Edit row button
+                document.querySelectorAll('.edit-row-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        const station = psmData.find(s => s['PSM Station Number'] === id);
+                        
+                        if (station) {
+                            // Show add modal but with data pre-filled
+                            document.getElementById('new-psm-number').value = station['PSM Station Number'];
+                            document.getElementById('new-atoll').value = station.Atoll || '';
+                            document.getElementById('new-island').value = station.Island;
+                            document.getElementById('new-lat').value = station.Lat !== '-' ? station.Lat : '';
+                            document.getElementById('new-long').value = station.Long !== '-' ? station.Long : '';
+                            document.getElementById('new-easting').value = station.Easting || '';
+                            document.getElementById('new-northing').value = station.Northing || '';
+                            document.getElementById('new-ortho-height').value = station['Ortho Height'] || '';
+                            document.getElementById('new-ellipsoid-height').value = station['Ellipsoid Height'] !== '-' ? station['Ellipsoid Height'] : '';
+                            document.getElementById('new-date').value = station.Date || '';
+                            document.getElementById('new-file-url').value = station['File URL'] || '';
+                            
+                            // Change form behavior to update instead of add
+                            const form = document.getElementById('add-psm-form');
+                            form.setAttribute('data-edit-id', id);
+                            
+                            // Change button text
+                            const submitBtn = form.querySelector('button[type="submit"]');
+                            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Update PSM Station';
+                            
+                            // Show the modal
+                            document.getElementById('add-psm-modal').style.display = 'block';
+                        }
+                    });
+                });
+            }
+            
+            // Add search functionality to data table
+            document.getElementById('table-search').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#data-table tbody tr');
+                
+                rows.forEach(row => {
+                    let found = false;
+                    // Search in all cells of the row
+                    row.querySelectorAll('td').forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(searchTerm)) {
+                            found = true;
+                        }
+                    });
+                    
+                    // Show/hide row based on search result
+                    row.style.display = found ? '' : 'none';
+                });
+            });
+        }
+        
+        // Data management functions
+        function loadPSMData() {
+            return new Promise(async (resolve) => {
+                // First try to load from GitHub
+                const githubData = await fetchGitHubData();
+                
+                if (githubData) {
+                    resolve(githubData);
+                    return;
+                }
+                
+                // If GitHub fails, try localStorage
+                try {
+                    const savedData = localStorage.getItem('psmData');
+                    if (savedData) {
+                        const parsedData = JSON.parse(savedData);
+                        showFlashMessage("Loaded PSM data from local storage", "info");
+                        resolve(processData(parsedData));
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Error loading from localStorage:", e);
+                }
+                
+                // If all else fails, use empty array
+                showFlashMessage("No PSM data available. Please load data using the 'Load Custom JSON' button.", "warning");
+                resolve([]);
+            });
+        }
+
+        function savePSMData(data) {
+            localStorage.setItem('psmData', JSON.stringify(data));
+            showFlashMessage("Data saved successfully to local storage", "success");
+        }
+        
+        // Function to export data to CSV
+        function exportToCSV() {
+            // Get currently visible stations
+            let visibleStations = [];
+            markerCluster.getLayers().forEach(layer => {
+                visibleStations.push(layer.psmData);
+            });
+            
+            if (visibleStations.length === 0) {
+                visibleStations = psmData; // Export all if none are visible
+            }
+            
+            // Get headers
+            const headers = Object.keys(visibleStations[0]);
+            
+            // Create CSV content
+            let csvContent = headers.join(',') + '\n';
+            
+            visibleStations.forEach(station => {
+                const row = headers.map(header => {
+                    let value = station[header] || '';
+                    // Handle commas and quotes in values
+                    if (value.includes(',') || value.includes('"')) {
+                        value = `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                });
+                csvContent += row.join(',') + '\n';
+            });
+            
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'maldives_psm_stations.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showFlashMessage(`Exported ${visibleStations.length} stations to CSV`, "success");
+        }
+        
+        // Function to export data to JSON
+        function exportToJSON() {
+            // Get currently visible stations
+            let visibleStations = [];
+            markerCluster.getLayers().forEach(layer => {
+                visibleStations.push(layer.psmData);
+            });
+            
+            if (visibleStations.length === 0) {
+                visibleStations = psmData; // Export all if none are visible
+            }
+            
+            // Create enhanced JSON with decimal coordinates
+            const enhancedData = visibleStations.map(station => {
+                let lat = null;
+                let lng = null;
+                
+                if (station.Lat && station.Lat !== '-' && station.Lat !== 'N/A') {
+                    lat = dmsToDecimal(station.Lat);
+                }
+                
+                if (station.Long && station.Long !== '-' && station.Long !== 'N/A') {
+                    lng = dmsToDecimal(station.Long);
+                }
+                
+                return {
+                    ...station,
+                    decimal_lat: lat,
+                    decimal_lng: lng
+                };
+            });
+            
+            // Create JSON string
+            const jsonContent = JSON.stringify(enhancedData, null, 2);
+            
+            // Create download link
+            const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'maldives_psm_stations.json');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showFlashMessage(`Exported ${visibleStations.length} stations to JSON`, "success");
+        }
+        
+        // Function to share current map view
+        function shareCurrentView() {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            const selectedAtoll = document.getElementById('atoll-filter').value;
+            const selectedIsland = document.getElementById('island-filter').value;
+            const psmSearch = document.getElementById('psm-search').value;
+            
+            // Create URL parameters
+            const params = new URLSearchParams();
+            params.set('lat', center.lat.toFixed(6));
+            params.set('lng', center.lng.toFixed(6));
+            params.set('zoom', zoom);
+            
+            if (selectedAtoll) {
+                params.set('atoll', selectedAtoll);
+            }
+            
+            if (selectedIsland) {
+                params.set('island', selectedIsland);
+            }
+            
+            if (psmSearch) {
+                params.set('psm', psmSearch);
+            }
+            
+            // Get the current URL without parameters
+            const url = window.location.href.split('?')[0] + '?' + params.toString();
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(url).then(() => {
+                showFlashMessage("Map link copied to clipboard!", "success");
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+                prompt('Copy this map link:', url);
+            });
+        }
+        
+        // User location handling
+        function handleLocationButton() {
+            document.getElementById('location-btn').addEventListener('click', function() {
+                if ("geolocation" in navigator) {
+                    showFlashMessage("Getting your location...", "info");
+                    
+                    navigator.geolocation.getCurrentPosition(
+                        // Success callback
+                        function(position) {
+                            const userLat = position.coords.latitude;
+                            const userLng = position.coords.longitude;
+                            
+                            // Create a special marker for user location if it doesn't exist
+                            if (!window.userLocationMarker) {
+                                window.userLocationMarker = L.marker([userLat, userLng], {
+                                    icon: L.divIcon({
+                                        html: '<div style="background-color: #3388ff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>',
+                                        className: 'user-location-marker',
+                                        iconSize: [22, 22],
+                                        iconAnchor: [11, 11]
+                                    })
+                                }).addTo(map);
+                                
+                                // Add accuracy circle
+                                window.userLocationCircle = L.circle([userLat, userLng], {
+                                    radius: position.coords.accuracy,
+                                    fillColor: '#3388ff',
+                                    fillOpacity: 0.15,
+                                    color: '#3388ff',
+                                    weight: 1
+                                }).addTo(map);
+                            } else {
+                                // Update existing marker position
+                                window.userLocationMarker.setLatLng([userLat, userLng]);
+                                window.userLocationCircle.setLatLng([userLat, userLng]);
+                                window.userLocationCircle.setRadius(position.coords.accuracy);
+                            }
+                            
+                            // Fly to the user's location
+                            map.flyTo([userLat, userLng], 14);
+                            
+                            showFlashMessage("Location found!", "success");
+                            
+                            // Find closest PSM stations
+                            findNearbyStations(userLat, userLng);
+                        },
+                        // Error callback
+                        function(error) {
+                            console.error("Error getting location:", error);
+                            let errorMsg = "Could not get your location. ";
+                            
+                            switch(error.code) {
+                                case error.PERMISSION_DENIED:
+                                    errorMsg += "Location access was denied. Please enable location services.";
+                                    break;
+                                case error.POSITION_UNAVAILABLE:
+                                    errorMsg += "Location information is unavailable.";
+                                    break;
+                                case error.TIMEOUT:
+                                    errorMsg += "Location request timed out.";
+                                    break;
+                                case error.UNKNOWN_ERROR:
+                                    errorMsg += "An unknown error occurred.";
+                                    break;
+                            }
+                            
+                            showFlashMessage(errorMsg, "error");
+                        },
+                        // Options
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
+                        }
+                    );
+                } else {
+                    showFlashMessage("Geolocation is not supported by your browser", "error");
+                }
+            });
+        }
+        
+        // Find nearby stations
+        function findNearbyStations(lat, lng) {
+            // Calculate distance between two coordinates in kilometers
+            function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Radius of the earth in km
+                const dLat = deg2rad(lat2 - lat1);
+                const dLon = deg2rad(lon2 - lon1);
+                const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2); 
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+                const d = R * c; // Distance in km
+                return d;
+            }
+            
+            function deg2rad(deg) {
+                return deg * (Math.PI/180);
+            }
+            
+            // Find closest stations
+            const nearbyStations = [];
+            
+            markers.forEach(marker => {
+                const station = marker.psmData;
+                const markerLat = marker.getLatLng().lat;
+                const markerLng = marker.getLatLng().lng;
+                
+                const distance = getDistanceFromLatLonInKm(lat, lng, markerLat, markerLng);
+                
+                if (distance <= 10) { // Within 10km
+                    nearbyStations.push({
+                        station: station,
+                        distance: distance
+                    });
+                }
+            });
+            
+            // Sort by distance
+            nearbyStations.sort((a, b) => a.distance - b.distance);
+            
+            // Show info panel with closest stations
+            if (nearbyStations.length > 0) {
+                const infoPanel = document.getElementById('info-panel');
+                let html = `
+                    <div class="bg-blue-50 rounded p-3 mb-3">
+                        <h3 class="font-bold text-blue-800 mb-1">Nearby PSM Stations</h3>
+                        <p class="text-gray-600 text-sm">Showing stations within 10km of your location</p>
+                    </div>
+                    <div class="space-y-3">
+                `;
+                
+                nearbyStations.slice(0, 5).forEach(item => {
+                    html += `
+                        <div class="bg-white border rounded p-2 hover:bg-blue-50 cursor-pointer station-item" data-id="${item.station['PSM Station Number']}">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-medium">${item.station['PSM Station Number']}</h4>
+                                <span class="text-gray-600 text-sm">${item.distance.toFixed(2)} km</span>
+                            </div>
+                            <p class="text-sm text-gray-700">${item.station.Island}</p>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+                
+                if (nearbyStations.length > 5) {
+                    html += `
+                        <div class="mt-3 text-center text-gray-600 text-sm">
+                            + ${nearbyStations.length - 5} more stations nearby
+                        </div>
+                    `;
+                }
+                
+                infoPanel.innerHTML = html;
+                
+                // Add click handlers to show station details
+                document.querySelectorAll('.station-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        const station = psmData.find(s => s['PSM Station Number'] === id);
+                        if (station) {
+                            displayStationInfo(station);
+                        }
+                    });
+                });
+                
+                showFlashMessage(`Found ${nearbyStations.length} PSM stations near your location`, "success");
+            } else {
+                document.getElementById('info-panel').innerHTML = `
+                    <div class="bg-yellow-50 p-3 rounded">
+                        <p class="text-yellow-700">No PSM stations found within 10km of your location.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Custom JSON file loading
+        function setupCustomJsonLoader() {
+            document.getElementById('load-json-btn').addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    showLoading();
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(event) {
+                        try {
+                            const customData = JSON.parse(event.target.result);
+                            
+                            if (Array.isArray(customData) && customData.length > 0) {
+                                // Clear all existing data
+                                psmData = [];
+                                markers = [];
+                                islands.clear();
+                                atolls.clear();
+                                islandsByAtoll = {};
+                                psmById = {};
+                                
+                                // Process the data to ensure Atoll field is present
+                                psmData = processData(customData);
+                                
+                                // Save to localStorage
+                                savePSMData(psmData);
+                                
+                                // Rebuild markers and filters
+                                createMarkers();
+                                
+                                // Reset map view
+                                resetMapView();
+                                
+                                // Update data table if visible
+                                if (document.getElementById('tab-data').classList.contains('active')) {
+                                    populateDataTable(psmData);
+                                }
+                                
+                                hideLoading();
+                                showFlashMessage(`Loaded ${psmData.length} PSM stations from custom file`, "success");
+                            } else {
+                                hideLoading();
+                                showFlashMessage("Invalid JSON data format. Expected an array of PSM stations.", "error");
+                            }
+                        } catch (error) {
+                            hideLoading();
+                            console.error("Error parsing JSON file:", error);
+                            showFlashMessage("Error parsing JSON file. Make sure it's valid JSON.", "error");
+                        }
+                    };
+                    
+                    reader.readAsText(file);
+                };
+                
+                input.click();
+            });
+        }
+        
+        // Tab functionality
+        function setupTabs() {
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Hide all tab contents
+                    document.querySelectorAll('.tab-content').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    
+                    // Deactivate all tab buttons
+                    document.querySelectorAll('.tab-button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Show the selected tab content
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // Activate the clicked button
+                    this.classList.add('active');
+                    
+                    // If data tab is selected, populate the table
+                    if (tabId === 'tab-data') {
+                        populateDataTable(psmData);
+                    }
+                });
+            });
+        }
+        
+        // Admin functionality
+        function setupAdminFunctionality() {
+            // Login modal functionality
+            const loginModal = document.getElementById('login-modal');
+            const loginBtn = document.getElementById('admin-login-btn');
+            const closeBtns = document.querySelectorAll('.close');
+            
+            loginBtn.addEventListener('click', function() {
+                loginModal.style.display = 'block';
+            });
+            
+            closeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    loginModal.style.display = 'none';
+                    document.getElementById('add-psm-modal').style.display = 'none';
+                });
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target === loginModal) {
+                    loginModal.style.display = 'none';
+                }
+                if (event.target === document.getElementById('add-psm-modal')) {
+                    document.getElementById('add-psm-modal').style.display = 'none';
+                }
+            });
+            
+            // Admin login with updated password
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                // Updated authentication with new password
+                if (username === 'admin' && password === 'MVPSM@edit@7762') {
+                    localStorage.setItem('psmAdminLoggedIn', 'true');
+                    document.getElementById('admin-panel').classList.add('visible');
+                    document.getElementById('admin-login-btn').style.display = 'none';
+                    loginModal.style.display = 'none';
+                    
+                    // If data table is visible, refresh it to make cells editable
+                    if (document.getElementById('tab-data').classList.contains('active')) {
+                        populateDataTable(psmData);
+                    }
+                    
+                    showFlashMessage("Successfully logged in as administrator", "success");
+                } else {
+                    showFlashMessage("Invalid username or password", "error");
+                }
+            });
+            
+            // Admin logout
+            document.getElementById('admin-logout-btn').addEventListener('click', function() {
+                localStorage.removeItem('psmAdminLoggedIn');
+                document.getElementById('admin-panel').classList.remove('visible');
+                document.getElementById('admin-login-btn').style.display = 'block';
+                
+                // Refresh data table to remove editable feature
+                if (document.getElementById('tab-data').classList.contains('active')) {
+                    populateDataTable(psmData);
+                }
+                
+                showFlashMessage("You have been logged out", "info");
+            });
+            
+            // Check if admin is already logged in
+            if (localStorage.getItem('psmAdminLoggedIn') === 'true') {
+                document.getElementById('admin-panel').classList.add('visible');
+                document.getElementById('admin-login-btn').style.display = 'none';
+            }
+            
+            // Add PSM Station
+            document.getElementById('add-psm-btn').addEventListener('click', function() {
+                // Reset form and make sure it's in "add" mode
+                document.getElementById('add-psm-form').reset();
+                document.getElementById('add-psm-form').removeAttribute('data-edit-id');
+                
+                // Reset button text
+                const submitBtn = document.getElementById('add-psm-form').querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-plus mr-2"></i> Add PSM Station';
+                
+                document.getElementById('add-psm-modal').style.display = 'block';
+            });
+            
+            // Add row button for data table
+            document.getElementById('add-row-btn').addEventListener('click', function() {
+                // Only allow if admin is logged in
+                if (localStorage.getItem('psmAdminLoggedIn') === 'true') {
+                    document.getElementById('add-psm-modal').style.display = 'block';
+                } else {
+                    showFlashMessage("You must be logged in as admin to add rows", "warning");
+                }
+            });
+            
+            document.getElementById('add-psm-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const editId = this.getAttribute('data-edit-id');
+                
+                const newStation = {
+                    'PSM Station Number': document.getElementById('new-psm-number').value,
+                    'Atoll': document.getElementById('new-atoll').value,
+                    'Island': document.getElementById('new-island').value,
+                    'Lat': document.getElementById('new-lat').value || '-',
+                    'Long': document.getElementById('new-long').value || '-',
+                    'Ellipsoid Height': document.getElementById('new-ellipsoid-height').value || '-',
+                    'Easting': document.getElementById('new-easting').value || '',
+                    'Northing': document.getElementById('new-northing').value || '',
+                    'Ortho Height': document.getElementById('new-ortho-height').value || '',
+                    'Date': document.getElementById('new-date').value || '',
+                    'File URL': document.getElementById('new-file-url').value || ''
+                };
+                
+                if (editId) {
+                    // Edit existing station
+                    const index = psmData.findIndex(station => station['PSM Station Number'] === editId);
+                    if (index !== -1) {
+                        psmData[index] = newStation;
+                        showFlashMessage(`Updated PSM station ${editId}`, "success");
+                    }
+                } else {
+                    // Add new station
+                    psmData.push(newStation);
+                    showFlashMessage("New PSM station added successfully", "success");
+                }
+                
+                // Save data
+                savePSMData(psmData);
+                
+                // Update markers and filters
+                createMarkers();
+                populateIslandDropdown(document.getElementById('atoll-filter').value);
+                
+                // Reset form and close modal
+                document.getElementById('add-psm-form').reset();
+                document.getElementById('add-psm-modal').style.display = 'none';
+                
+                // If data tab is visible, refresh table
+                if (document.getElementById('tab-data').classList.contains('active')) {
+                    populateDataTable(psmData);
+                }
+            });
+            
+            // Save changes button
+            document.getElementById('save-changes-btn').addEventListener('click', function() {
+                // Save to localStorage
+                savePSMData(psmData);
+                showFlashMessage("Changes saved successfully!", "success");
+            });
+            
+            // Import data button
+            document.getElementById('import-data-btn').addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json,.csv';
+                
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(event) {
+                        try {
+                            if (file.name.endsWith('.json')) {
+                                // Parse JSON
+                                const importedData = JSON.parse(event.target.result);
+                                
+                                // Validate data structure
+                                if (Array.isArray(importedData) && importedData.length > 0) {
+                                    // Clear all existing data
+                                    psmData = [];
+                                    markers = [];
+                                    islands.clear();
+                                    atolls.clear();
+                                    islandsByAtoll = {};
+                                    psmById = {};
+                                    
+                                    // Process imported data
+                                    psmData = processData(importedData);
+                                    
+                                    // Save to storage
+                                    savePSMData(psmData);
+                                    
+                                    // Rebuild markers, filters, etc.
+                                    createMarkers();
+                                    
+                                    // Update data table if visible
+                                    if (document.getElementById('tab-data').classList.contains('active')) {
+                                        populateDataTable(psmData);
+                                    }
+                                    
+                                    showFlashMessage(`Successfully imported ${psmData.length} PSM stations`, "success");
+                                } else {
+                                    showFlashMessage('Invalid JSON data structure. Expected an array of PSM stations.', "error");
+                                }
+                            } else if (file.name.endsWith('.csv')) {
+                                // Parse CSV
+                                const csvText = event.target.result;
+                                const lines = csvText.split('\n');
+                                const headers = lines[0].split(',');
+                                
+                                const importedData = [];
+                                
+                                for (let i = 1; i < lines.length; i++) {
+                                    if (lines[i].trim() === '') continue;
+                                    
+                                    const values = lines[i].split(',');
+                                    const entry = {};
+                                    
+                                    headers.forEach((header, index) => {
+                                        entry[header.trim()] = values[index] ? values[index].trim() : '';
+                                    });
+                                    
+                                    importedData.push(entry);
+                                }
+                                
+                                // Clear all existing data
+                                psmData = [];
+                                markers = [];
+                                islands.clear();
+                                atolls.clear();
+                                islandsByAtoll = {};
+                                psmById = {};
+                                
+                                // Process imported data
+                                psmData = processData(importedData);
+                                
+                                // Save to storage
+                                savePSMData(psmData);
+                                
+                                // Rebuild markers, filters, etc.
+                                createMarkers();
+                                
+                                // Update data table if visible
+                                if (document.getElementById('tab-data').classList.contains('active')) {
+                                    populateDataTable(psmData);
+                                }
+                                
+                                showFlashMessage(`Successfully imported ${psmData.length} PSM stations`, "success");
+                            } else {
+                                showFlashMessage('Unsupported file format. Please use JSON or CSV.', "error");
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            showFlashMessage('Error importing data: ' + error.message, "error");
+                        }
+                    };
+                    
+                    if (file.name.endsWith('.json') || file.name.endsWith('.csv')) {
+                        reader.readAsText(file);
+                    } else {
+                        showFlashMessage('Unsupported file format. Please use JSON or CSV.', "error");
+                    }
+                };
+                
+                input.click();
+            });
+            
+            // Export full data button
+            document.getElementById('export-full-data-btn').addEventListener('click', function() {
+                const jsonContent = JSON.stringify(psmData, null, 2);
+                
+                const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'maldives_psm_full_dataset.json');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showFlashMessage(`Exported full dataset with ${psmData.length} stations`, "success");
+            });
+        }
+        
+        // Check URL parameters for shared views
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            
+            // Get map position parameters
+            const lat = params.get('lat');
+            const lng = params.get('lng');
+            const zoom = params.get('zoom');
+            const atoll = params.get('atoll');
+            const island = params.get('island');
+            const psm = params.get('psm');
+            
+            // Set map view if coordinates and zoom are provided
+            if (lat && lng && zoom) {
+                map.setView([parseFloat(lat), parseFloat(lng)], parseInt(zoom));
+            } else {
+                // Otherwise initialize with all markers visible
+                if (markers.length > 0) {
+                    const group = L.featureGroup(markers);
+                    map.fitBounds(group.getBounds(), { padding: [50, 50] });
+                }
+            }
+            
+            // Set filters if provided
+            if (atoll) {
+                document.getElementById('atoll-filter').value = atoll;
+                // Update island dropdown based on selected atoll
+                populateIslandDropdown(atoll);
+            }
+            
+            if (island) {
+                document.getElementById('island-filter').value = island;
+            }
+            
+            if (psm) {
+                document.getElementById('psm-search').value = psm;
+            }
+            
+            // Apply search if any filters are set
+            if (atoll || island || psm) {
+                performSearch();
+            }
+        }
+        
+        // Main initialization function
+        async function init() {
+            showLoading();
+            
+            // Initialize the map
+            initMap();
+            
+            // Load PSM data
+            psmData = await loadPSMData();
+            
+            // Create markers and filter options
+            createMarkers();
+            
+            // Check URL parameters
+            checkUrlParams();
+            
+            // Set up event listeners
+            document.getElementById('atoll-filter').addEventListener('change', function() {
+                const selectedAtoll = this.value;
+                populateIslandDropdown(selectedAtoll);
+                
+                // Show feedback
+                if (selectedAtoll) {
+                    showFlashMessage(`Filtered islands to show only those in ${selectedAtoll} atoll`, "info");
+                }
+            });
+            
+            document.getElementById('search-btn').addEventListener('click', function() {
+                performSearch();
+            });
+            
+            document.getElementById('psm-search').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+            
+            document.getElementById('reset-view').addEventListener('click', function() {
+                resetMapView();
+            });
+            
+            // Data export functionality
+            document.getElementById('export-csv').addEventListener('click', function() {
+                exportToCSV();
+            });
+            
+            document.getElementById('export-json').addEventListener('click', function() {
+                exportToJSON();
+            });
+            
+            document.getElementById('copy-link').addEventListener('click', function() {
+                shareCurrentView();
+            });
+            
+            // Setup additional features
+            setupCustomJsonLoader();
+            setupTabs();
+            setupAdminFunctionality();
+            handleLocationButton();
+            
+            hideLoading();
+        }
+        
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
