@@ -4,41 +4,77 @@
         "location": "Male, Maldives",
         "latitude": 4.177778,
         "longitude": 73.50662,
-        "ellipsoid_height": -57
+        "ellipsoid_height": -57,
+        "ntrip_protocol": "RTMC 3.3",
+        "receiver": "CHCNAV P5",
+        "antenna": "CHCNAV C220GR2",
+        "raw_observations_recorded": true,
+        "format": "Rinex 3.02",
+        "length": "1 Hour"
     },
     {
         "station_name": "OORR",
         "location": "One & Only Reethi Rah, Maldives",
-        "latitude": 4.510173,
-        "longitude": 73.370342,
-        "ellipsoid_height": -93
+        "latitude": 5.103308,
+        "longitude": 73.072019,
+        "ellipsoid_height": -87,
+        "ntrip_protocol": "RTMC 3.3",
+        "receiver": "CHCNAV P5",
+        "antenna": "CHCNAV C220GR2",
+        "raw_observations_recorded": true,
+        "format": "Rinex 3.02",
+        "length": "1 Hour"
     },
     {
         "station_name": "HMLE",
         "location": "Hulhumale, Maldives",
         "latitude": 4.219725,
         "longitude": 73.54482,
-        "ellipsoid_height": -78
+        "ellipsoid_height": -78,
+        "ntrip_protocol": "RTMC 3.3",
+        "receiver": "CHCNAV P5",
+        "antenna": "CHCNAV C220GR2",
+        "raw_observations_recorded": true,
+        "format": "Rinex 3.02",
+        "length": "1 Hour"
     },
     {
         "station_name": "MAD",
         "location": "K. Maadhoo, Maldives",
         "latitude": 3.868396,
         "longitude": 73.460886,
-        "ellipsoid_height": -88
+        "ellipsoid_height": -88,
+        "ntrip_protocol": "RTMC 3.3",
+        "receiver": "CHCNAV P5",
+        "antenna": "CHCNAV AT312",
+        "raw_observations_recorded": true,
+        "format": "Rinex 3.02",
+        "length": "1 Hour"
     },
     {
         "station_name": "SUN",
         "location": "Villa Park, Maldives",
         "latitude": 3.483979,
         "longitude": 72.794384,
-        "ellipsoid_height": -87
+        "ellipsoid_height": -87,
+        "ntrip_protocol": "RTMC 3.3",
+        "receiver": "CHCNAV P5",
+        "antenna": "CHCNAV C220GR2",
+        "raw_observations_recorded": true,
+        "format": "Rinex 3.02",
+        "length": "1 Hour"
     },
     {
         "station_name": "EYD",
         "location": "B. Eydhafushi, Maldives",
         "latitude": 5.103308,
         "longitude": 73.072019,
-        "ellipsoid_height": -87
+        "ellipsoid_height": -87,
+        "ntrip_protocol": "RTMC 3.3",
+        "receiver": "CHCNAV P5",
+        "antenna": "CHCNAV C220GR2",
+        "raw_observations_recorded": true,
+        "format": "Rinex 3.02",
+        "length": "1 Hour"
     }
 ]
