@@ -1,5 +1,18 @@
 [
     {
+        "station_name": "MLE",
+        "location": "Male, Maldives",
+        "latitude": 4.177778,
+        "longitude": 73.50662,
+        "ellipsoid_height": -57,
+        "ntrip_protocol": "RTMC 3.3",
+        "receiver": "CHCNAV P5",
+        "antenna": "CHCNAV C220GR2",
+        "raw_observations_recorded": true,
+        "format": "Rinex 3.02",
+        "length": "1 Hour"
+    },
+    {
         "station_name": "OORR",
         "location": "One & Only Reethi Rah, Maldives",
         "latitude": 5.103308,
